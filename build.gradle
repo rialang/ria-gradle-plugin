@@ -3,11 +3,14 @@ plugins {
     id 'maven-publish'
 }
 
-group 'com.github.rialang'
-version '1.0'
-
 apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
 
+group 'com.github.rialang'
+version '0.7.0'
+
+archivesBaseName = "ria-gradle-plugin"
 sourceCompatibility = 1.8
 
 repositories {
@@ -29,8 +32,70 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
 publishing {
     repositories {
         mavenLocal()
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                name 'Ria Gradle Plugin'
+                packaging 'jar'
+                description 'A gradle plugin for the Ria programming language.'
+                url 'https://github.com/rialang/ria-gradle-plugin'
+
+                scm {
+                    connection 'scm:git:git://github.com/rialang/ria-gradle-plugin.git'
+                    developerConnection 'scm:git:ssh://github.com:rialang/ria-gradle-plugin.git'
+                    url 'https://github.com/rialang/ria-gradle-plugin/tree/master'
+                }
+
+                licenses {
+                    license {
+                        name 'The MIT License'
+                        url 'https://opensource.org/licenses/mit-license.php'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'petera'
+                        name 'Peter Arthur'
+                        email 'pete.arthur@gmail.com'
+                    }
+                }
+            }
+        }
     }
 }
